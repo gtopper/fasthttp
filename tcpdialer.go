@@ -2,6 +2,7 @@ package fasthttp
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -281,7 +282,7 @@ func (d *TCPDialer) dial(addr string, dualStack bool, timeout time.Duration) (ne
 func tryDial(network string, addr *net.TCPAddr, deadline time.Time, concurrencyCh chan struct{}) (net.Conn, error) {
 	timeout := -time.Since(deadline)
 	if timeout <= 0 {
-		return nil, ErrDialTimeout
+		return nil, errors.New(fmt.Sprintf("dialing to the given TCP address timed out (timeout=%v, must be positive)", timeout))
 	}
 
 	if concurrencyCh != nil {
@@ -297,7 +298,7 @@ func tryDial(network string, addr *net.TCPAddr, deadline time.Time, concurrencyC
 			}
 			ReleaseTimer(tc)
 			if isTimeout {
-				return nil, ErrDialTimeout
+				return nil, errors.New(fmt.Sprintf("dialing to the given TCP address timed out (too many concurrent dials; concurrency=%d, timeout=%v)", len(concurrencyCh), timeout))
 			}
 		}
 	}
@@ -328,7 +329,7 @@ func tryDial(network string, addr *net.TCPAddr, deadline time.Time, concurrencyC
 		err = dr.err
 		dialResultChanPool.Put(ch)
 	case <-tc.C:
-		err = ErrDialTimeout
+		err = errors.New(fmt.Sprintf("dialing to the given TCP address timed out (dial took longer than timeout=%v)", timeout))
 	}
 	ReleaseTimer(tc)
 
