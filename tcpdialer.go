@@ -2,6 +2,7 @@ package fasthttp
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -309,7 +310,9 @@ func tryDial(network string, addr *net.TCPAddr, deadline time.Time, concurrencyC
 	ch := chv.(chan dialResult)
 	go func() {
 		var dr dialResult
+		fmt.Printf("fasthttp: calling net.DialTCP(%+v, nil, %+v)\n", network, addr)
 		dr.conn, dr.err = net.DialTCP(network, nil, addr)
+		fmt.Printf("fasthttp: net.DialTCP(%+v, nil, %+v) returned with dr.conn=%+v and dr.err=%+v\n", network, addr, dr.conn, dr.err)
 		ch <- dr
 		if concurrencyCh != nil {
 			<-concurrencyCh
