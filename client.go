@@ -1124,6 +1124,8 @@ func (c *HostClient) doNonNilReqResp(req *Request, resp *Response) (bool, error)
 		panic("BUG: resp cannot be nil")
 	}
 
+	req.Header.SetBytesKV(strConnection, strKeepAlive)
+
 	atomic.StoreUint32(&c.lastUseTime, uint32(time.Now().Unix()-startTimeUnix))
 
 	// Free up resources occupied by response before sending the request,
