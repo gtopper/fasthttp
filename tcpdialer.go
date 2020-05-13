@@ -279,6 +279,11 @@ func (d *TCPDialer) dial(addr string, dualStack bool, timeout time.Duration) (ne
 	return nil, err
 }
 
+const timestampLayout = "2006-01-02 15:04:05.000000000Z07:00"
+
+var dialCounterLock sync.Mutex
+var dialCounter int64
+
 func tryDial(network string, addr *net.TCPAddr, deadline time.Time, concurrencyCh chan struct{}) (net.Conn, error) {
 	timeout := -time.Since(deadline)
 	if timeout <= 0 {
@@ -308,11 +313,17 @@ func tryDial(network string, addr *net.TCPAddr, deadline time.Time, concurrencyC
 		chv = make(chan dialResult, 1)
 	}
 	ch := chv.(chan dialResult)
+
+	dialCounterLock.Lock()
+	dialCounter++
+	dialID := dialCounter
+	dialCounterLock.Unlock()
+
 	go func() {
 		var dr dialResult
-		fmt.Printf("%s fasthttp: calling net.DialTCP(%+v, nil, %+v)\n", time.Now().Format("2006-01-02 15:04:05Z07:00"), network, addr)
+		fmt.Printf("%s fasthttp: dialID=%d calling net.DialTCP(%+v, nil, %+v)\n", time.Now().Format(timestampLayout), dialID, network, addr)
 		dr.conn, dr.err = net.DialTCP(network, nil, addr)
-		fmt.Printf("%s fasthttp: net.DialTCP(%+v, nil, %+v) returned with dr.conn=%+v and dr.err=%+v\n", time.Now().Format("2006-01-02 15:04:05Z07:00"), network, addr, dr.conn, dr.err)
+		fmt.Printf("%s fasthttp: dialID=%d net.DialTCP(%+v, nil, %+v) returned with dr.conn=%+v and dr.err=%+v\n", time.Now().Format(timestampLayout), dialID, network, addr, dr.conn, dr.err)
 		ch <- dr
 		if concurrencyCh != nil {
 			<-concurrencyCh
@@ -332,6 +343,7 @@ func tryDial(network string, addr *net.TCPAddr, deadline time.Time, concurrencyC
 		dialResultChanPool.Put(ch)
 	case <-tc.C:
 		err = ErrDialTimeout
+		fmt.Printf("%s fasthttp: dialID=%d dial timeout! timer=%+v\n", time.Now().Format(timestampLayout), dialID, tc)
 	}
 	ReleaseTimer(tc)
 
