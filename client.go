@@ -1264,7 +1264,6 @@ func (c *HostClient) acquireConn() (*clientConn, error) {
 		}
 		if c.connsCount < maxConns {
 			c.connsCount++
-			fmt.Printf("%s fasthttp: incrementing connection count to %d\n", time.Now().Format("2006-01-02 15:04:05Z07:00"), c.connsCount)
 			createConn = true
 			if !c.connsCleanerRun {
 				startCleaner = true
@@ -1357,7 +1356,6 @@ func (c *HostClient) connsCleaner() {
 }
 
 func (c *HostClient) closeConn(cc *clientConn) {
-	fmt.Printf("%s fasthttp: closing connection %+v\n", time.Now().Format("2006-01-02 15:04:05Z07:00"), cc)
 	c.decConnsCount()
 	cc.c.Close()
 	releaseClientConn(cc)
@@ -1366,7 +1364,6 @@ func (c *HostClient) closeConn(cc *clientConn) {
 func (c *HostClient) decConnsCount() {
 	c.connsLock.Lock()
 	c.connsCount--
-	fmt.Printf("%s fasthttp: decrementing connection count to %d\n", time.Now().Format("2006-01-02 15:04:05Z07:00"), c.connsCount)
 	c.connsLock.Unlock()
 }
 
